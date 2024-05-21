@@ -8,20 +8,14 @@ from PIL import Image, ImageTk
 import os
 import datetime
 from zipfile import ZipFile
+import threading
+import queue
 
 SELECTED = "You selected {n} files to optimize"
 COUNT = "processed {n} images"
 BADEXTENSION = "{n} files are not images"
 SAVED = "Images saved on: {n}"
 CANCELED = "You canceled the operation"
-#def get_path(event):
-#    print(f"Event data: {event.data}")  # Imprime el contenido del evento
-#    print(type(event.data))
-#    paths = re.findall(r'\{([^}]+)\}', event.data)
-#    print(f"Extracted paths: {paths}")  # Imprime los paths extraídos
-#    #check if data are images
-#    updateLabel(len(paths),SELECTED)
-#    processImages(paths)
 
 def get_path(event):
     paths_in_braces = re.findall(r'\{([^}]+)\}', event.data)
@@ -39,13 +33,13 @@ def get_path(event):
         updateLabel(len(invalid_paths), BADEXTENSION)
     else:
         updateLabel(len(paths), SELECTED)
-        processImages(paths)
+        start_processing(paths)
 
 def loadfile():
     filenames = filedialog.askopenfilenames(initialdir="/downloads", title="Select an image", filetypes=[("Images", "*.png;*.apng;*.jpeg;*.jpg;*.webp;*.blp;*.bmp;*.ico;*.j2c;*.j2k;*.jp2;*.jpc;*.jpf;*.jpx;*.tif;*.tiff")])
     paths = list(filenames)
     updateLabel(len(paths),SELECTED)
-    processImages(paths)
+    start_processing(paths)
 
 def updateLabel(qty,message):
     if (qty != ''):
@@ -53,11 +47,10 @@ def updateLabel(qty,message):
     else:
         pathLabel.configure(text = message)
 
-def processImages(paths):
+def processImages(paths, queue):
     images = []
     for index, path in enumerate(paths):
-        updateLabel(f"{index + 1} of {len(paths)}", COUNT)
-
+        queue.put({'s':'processing', 'v':index + 1})
         image = Image.open(path)
         image = image.convert('RGBA')
         base_name = os.path.splitext(os.path.basename(path))[0]
@@ -77,10 +70,40 @@ def processImages(paths):
             for img_name, img_bytes in images:
                 zipf.writestr(img_name, img_bytes.read())
         
-        updateLabel(saveLocation,SAVED)
+        queue.put({'s':'completed','v':saveLocation})
     else:
-        updateLabel('',CANCELED)
+        queue.put({'s':'cancelled','v':''})
 
+def start_processing(paths):
+    q = queue.Queue()
+    processing_thread = threading.Thread(target=processImages, args=(paths, q))
+    
+    loadButton.config(state=DISABLED, style='TButtonDisabled.TButton')
+    original_text = loadButton.cget('text')
+    loadButton.config(text=f"Processing {len(paths)} elements")
+
+    processing_thread.start()
+    
+    def check_queue(q):
+        try:
+            while not q.empty():
+                msg = q.get_nowait()
+                if msg['s'] == "completed":
+                    updateLabel(msg['v'], SAVED)
+                elif msg['s'] == "cancelled":
+                    updateLabel('', CANCELED)
+                else: 
+                    updateLabel(msg['v'], COUNT)
+        except queue.Empty:
+            pass
+        finally:
+            if processing_thread.is_alive():
+                root.after(100, check_queue, q)
+            else:
+                # Re-enable the button and restore its text and style
+                loadButton.config(state=NORMAL, text=original_text, style='TButton')
+    
+    root.after(100, check_queue, q)
 
 root = Tk()
 root.title('Web Image Optimizator by Platense Digital')
@@ -95,6 +118,7 @@ buttonSize = windowSize/100*50
 loadButton.place(relx=0.5, rely=0.5, anchor=CENTER, height=buttonSize, width=buttonSize)
 style = ttk.Style()
 style.theme_use('alt')
+style.configure('TButtonDisabled.TButton', background='#1D9089')
 style.configure('TButton', background = '#29C9BF', foreground = 'black', width = 20, borderwidth=0, focusthickness=0, focuscolor='#24AEA5',font=('Helvetica', math.ceil(windowSize/100*2), 'bold'))
 style.map('TButton', background=[('active','#1D9089')])
 
@@ -113,4 +137,3 @@ logo_label.image = logotk
 logo_label.place(relx=1, rely=0.99, anchor=SE)
 
 root.mainloop()
-
