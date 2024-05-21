@@ -15,5 +15,5 @@ This is a really easy converter of any image file to WEBP. It is a version in an
 ## Download and use
 You can download the folder inside build that corresponds to your system and use it directly. If it is not found, you can try to compile it. You already have a preconfigured setup.py for cx_Freeze
 
-##Why a python version?
+## Why a python version?
 Because I don't like electron too much and I want to improve the application because I use it very frequently. python turned out to be simple and effective, with the possibility of exporting it to different devices.
