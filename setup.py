@@ -13,7 +13,7 @@ build_exe_options = {
 
 setup(
     name="Web image optimizer",
-    version="1.0.1",
+    version="1.1.0",
     description="An webp converter by Platense Digital",
     author = 'Guido Schmidt',
     executables=[target],
