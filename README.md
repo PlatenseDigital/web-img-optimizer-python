@@ -2,14 +2,15 @@
 This is a really easy converter of any image file to WEBP. It is a version in another language of: https://github.com/PlatenseDigital/web-img-optimizer
 
 ## functionalities
+### Quick mode:
 - Drag and drop or Click and search for file upload
-- Automatically transforms the images to webp and save them zipped.
+- Automatically transforms the images to webp.
 - If you transform many images at once, they are saved in a zip file
-- Advanced mode button with:
+### Advanced mode:
   - Resize option.
 
 ### Future updates
-- add to the advanced mode:
+- Add to the advanced mode:
   - Quality options.
   - Add more files before process.
   - See and manage uploaded files.
